@@ -172,6 +172,7 @@ class MemoryGame {
 
   handleKey(e) {
     if (!this.running || this.paused || this.state !== 'waiting_input') return;
+    if (e.type !== 'keydown') return;
 
     if (e.key === '1' || e.key === 'q' || e.key === 'Q') this.playerChoose(0);
     if (e.key === '2' || e.key === 'w' || e.key === 'W') this.playerChoose(1);

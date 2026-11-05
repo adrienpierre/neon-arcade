@@ -82,7 +82,9 @@ class AimGame {
   }
 
   handleKey(e) {
+    if (e.type !== 'keydown') return;
     if (e.key === ' ' || e.key === 'Spacebar') {
+      if (e.repeat) return;
       this.handleClick(this.mousePos.x, this.mousePos.y);
     }
   }

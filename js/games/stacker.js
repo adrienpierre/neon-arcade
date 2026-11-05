@@ -39,6 +39,12 @@ class StackerGame {
     this.dropCounter = 0;
     this.dropInterval = 45; // frames per step
 
+    this.isDropping = false;
+    this.lastMoveLeftTime = 0;
+    this.lastMoveRightTime = 0;
+    this.lastMoveDownTime = 0;
+    this.lastActionTime = 0;
+
     this.keys = {};
     this.running = false;
     this.paused = false;
@@ -65,6 +71,11 @@ class StackerGame {
     this.combo = 0;
     this.dropInterval = 45;
     this.dropCounter = 0;
+    this.isDropping = false;
+    this.lastMoveLeftTime = 0;
+    this.lastMoveRightTime = 0;
+    this.lastMoveDownTime = 0;
+    this.lastActionTime = 0;
     this.hold = null;
     this.canHold = true;
     this.particles.reset();
@@ -148,8 +159,25 @@ class StackerGame {
     return rotated;
   }
 
+  tryRotate() {
+    if (!this.running || this.paused || !this.current) return false;
+    const rot = this.rotate(this.current.matrix);
+    // Wall kicks: try neutral (0), shift left 1, right 1, left 2, right 2
+    const kicks = [0, -1, 1, -2, 2];
+    for (const kick of kicks) {
+      if (!this.collides(rot, this.current.x + kick, this.current.y)) {
+        this.current.matrix = rot;
+        this.current.x += kick;
+        if (window.soundEngine) window.soundEngine.playBounce();
+        return true;
+      }
+    }
+    return false;
+  }
+
   hardDrop() {
-    if (!this.running || this.paused || !this.current) return;
+    if (!this.running || this.paused || !this.current || this.isDropping) return;
+    this.isDropping = true;
     let dropDist = 0;
     while (!this.collides(this.current.matrix, this.current.x, this.current.y + 1)) {
       this.current.y++;
@@ -159,6 +187,9 @@ class StackerGame {
     this.particles.shake(12, 5);
     if (window.soundEngine) window.soundEngine.playBounce();
     this.lockPiece();
+    setTimeout(() => {
+      this.isDropping = false;
+    }, 140);
   }
 
   holdPiece() {
@@ -268,7 +299,10 @@ class StackerGame {
   }
 
   handleKey(e) {
+    if (e.type !== 'keydown') return;
     if (!this.running || this.paused || !this.current) return;
+
+    const now = performance.now();
 
     switch (e.key) {
       case 'ArrowLeft':
@@ -276,58 +310,95 @@ class StackerGame {
       case 'A':
       case 'q':
       case 'Q':
+        if (e.repeat && now - this.lastMoveLeftTime < 110) return;
+        this.lastMoveLeftTime = now;
         if (!this.collides(this.current.matrix, this.current.x - 1, this.current.y)) {
           this.current.x--;
           if (window.soundEngine) window.soundEngine.playClick();
         }
+        if (e.preventDefault) e.preventDefault();
         break;
+
       case 'ArrowRight':
       case 'd':
       case 'D':
+        if (e.repeat && now - this.lastMoveRightTime < 110) return;
+        this.lastMoveRightTime = now;
         if (!this.collides(this.current.matrix, this.current.x + 1, this.current.y)) {
           this.current.x++;
           if (window.soundEngine) window.soundEngine.playClick();
         }
+        if (e.preventDefault) e.preventDefault();
         break;
+
       case 'ArrowDown':
       case 's':
       case 'S':
+        if (e.repeat && now - this.lastMoveDownTime < 50) return;
+        this.lastMoveDownTime = now;
         if (!this.collides(this.current.matrix, this.current.x, this.current.y + 1)) {
           this.current.y++;
           this.score += 1;
         }
+        if (e.preventDefault) e.preventDefault();
         break;
+
       case 'ArrowUp':
       case 'w':
       case 'W':
       case 'z':
       case 'Z':
-        const rot = this.rotate(this.current.matrix);
-        if (!this.collides(rot, this.current.x, this.current.y)) {
-          this.current.matrix = rot;
-          if (window.soundEngine) window.soundEngine.playBounce();
-        }
+        if (e.repeat) return; // Prevent spinning wildly when holding Up
+        this.tryRotate();
+        if (e.preventDefault) e.preventDefault();
         break;
+
       case ' ':
+        if (e.repeat) return; // Drop exactly 1 piece per press
         this.hardDrop();
+        if (e.preventDefault) e.preventDefault();
         break;
+
       case 'c':
       case 'C':
       case 'Shift':
+        if (e.repeat) return;
         this.holdPiece();
+        if (e.preventDefault) e.preventDefault();
         break;
     }
   }
 
   handleTouch(action) {
-    if (action === 'left' && !this.collides(this.current.matrix, this.current.x - 1, this.current.y)) this.current.x--;
-    if (action === 'right' && !this.collides(this.current.matrix, this.current.x + 1, this.current.y)) this.current.x++;
-    if (action === 'down' && !this.collides(this.current.matrix, this.current.x, this.current.y + 1)) this.current.y++;
-    if (action === 'up') {
-      const rot = this.rotate(this.current.matrix);
-      if (!this.collides(rot, this.current.x, this.current.y)) this.current.matrix = rot;
+    if (!this.running || this.paused || !this.current) return;
+    const now = performance.now();
+
+    if (action === 'left') {
+      if (now - this.lastMoveLeftTime < 95) return;
+      this.lastMoveLeftTime = now;
+      if (!this.collides(this.current.matrix, this.current.x - 1, this.current.y)) {
+        this.current.x--;
+        if (window.soundEngine) window.soundEngine.playClick();
+      }
+    } else if (action === 'right') {
+      if (now - this.lastMoveRightTime < 95) return;
+      this.lastMoveRightTime = now;
+      if (!this.collides(this.current.matrix, this.current.x + 1, this.current.y)) {
+        this.current.x++;
+        if (window.soundEngine) window.soundEngine.playClick();
+      }
+    } else if (action === 'down') {
+      if (!this.collides(this.current.matrix, this.current.x, this.current.y + 1)) {
+        this.current.y++;
+        this.score += 1;
+      }
+    } else if (action === 'up') {
+      this.tryRotate();
+    } else if (action === 'action') {
+      if (now - this.lastActionTime < 280) return;
+      this.lastActionTime = now;
+      this.hardDrop();
     }
-    if (action === 'action') this.hardDrop();
   }
 
   update() {
