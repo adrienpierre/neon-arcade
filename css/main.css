@@ -1503,22 +1503,246 @@ body.crt-active .crt-overlay {
   color: var(--text-muted);
 }
 
+/* =========================================================
+   COMPREHENSIVE FULL MOBILE & TABLET RESPONSIVENESS
+   ========================================================= */
 @media (max-width: 768px) {
   .site-header {
-    padding: 0.8rem 1rem;
+    padding: 0.6rem 0.8rem;
+    padding-top: max(0.6rem, env(safe-area-inset-top));
   }
-  .player-stats-bar {
+  .logo-area {
+    gap: 8px;
+  }
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  .logo-title {
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+  }
+  .logo-badge {
     display: none;
+  }
+  #audio-visualizer-canvas {
+    display: none;
+  }
+
+  /* Compact mobile stats bar (keeps coins & profile accessible) */
+  .player-stats-bar {
+    display: flex;
+    gap: 6px;
+  }
+  .xp-bar-container,
+  #btn-trophies,
+  .stat-pill:nth-child(3) {
+    display: none;
+  }
+  .stat-pill {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+  .stat-pill .val {
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+  #theme-selector {
+    display: none;
+  }
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 0.95rem;
+  }
+
+  .live-ticker-bar {
+    padding: 4px 0.8rem;
+    font-size: 0.75rem;
+  }
+  .ticker-badge {
+    font-size: 0.62rem;
+    padding: 2px 6px;
+    margin-right: 6px;
+  }
+  #ticker-marquee-text {
+    font-size: 0.82rem;
+  }
+
+  .arcade-hero {
+    padding: 1.8rem 1rem 1rem;
+  }
+  .hero-tag {
+    font-size: 0.68rem;
+    padding: 4px 10px;
+  }
+  .hero-title {
+    font-size: clamp(1.6rem, 7vw, 2.3rem);
+    letter-spacing: -0.5px;
+  }
+  .hero-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.45;
+  }
+
+  .daily-quests-container {
+    padding: 1.2rem;
+  }
+  .daily-quests-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* Horizontal swipeable category tabs on phone */
+  .category-bar {
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 0 1rem 8px;
+    margin-bottom: 1.5rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .category-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+
+  .games-section {
+    padding: 0 1rem 2rem;
   }
   .games-grid {
     grid-template-columns: 1fr;
+    gap: 18px;
   }
+  .card-banner {
+    height: 160px;
+  }
+
+  .leaderboard-section {
+    padding: 0 1rem 3rem;
+    margin: 0 auto;
+  }
+  .leaderboard-container {
+    padding: 1.2rem;
+  }
+  .leaderboard-title {
+    font-size: 1rem;
+  }
+  .leaderboard-select {
+    font-size: 0.78rem;
+    max-width: 140px;
+    padding: 6px 10px;
+  }
+
+  /* Game Arena Fullscreen Mobile */
+  #game-modal {
+    height: 100vh;
+    height: 100dvh;
+  }
+  .arena-header {
+    padding: 0.5rem 0.8rem;
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+  .arena-game-name {
+    font-size: 1.05rem;
+  }
+  .arena-controls-hint {
+    display: none;
+  }
+  .arena-stats {
+    gap: 12px;
+  }
+  .arena-stat-item .val {
+    font-size: 1.15rem;
+  }
+
+  .arena-body {
+    padding: 0.4rem;
+  }
+  #game-canvas {
+    max-width: 100%;
+    max-height: calc(100dvh - 145px);
+    object-fit: contain;
+    touch-action: none;
+  }
+
+  /* Virtual Touch On-Screen Controls */
   .touch-controls-bar {
     display: flex;
+    bottom: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(4, 6, 16, 0.85);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+  }
+  .touch-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+
+  /* Game Over Overlay */
+  .arena-overlay-layer {
+    padding: 1.2rem;
+  }
+  .overlay-title {
+    font-size: 1.6rem;
   }
   .overlay-score-summary {
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
+    margin-bottom: 1.2rem;
+  }
+  .overlay-buttons {
+    flex-direction: column;
+    width: 100%;
+    max-width: 270px;
+    gap: 8px;
+  }
+  .overlay-buttons button {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 18px;
+    font-size: 0.95rem;
+  }
+
+  /* Modals Dialog */
+  .modal-dialog {
+    width: 95% !important;
+    max-height: 90dvh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 1.2rem !important;
+  }
+  .profile-input {
+    min-height: 44px;
+    font-size: 0.95rem;
+  }
+
+  /* Toasts */
+  #toast-container {
+    bottom: 14px;
+    right: 5%;
+    left: 5%;
+  }
+  .toast {
+    max-width: 100%;
+    padding: 10px 14px;
   }
 }
 
