@@ -494,29 +494,54 @@
   <div id="profile-modal" class="custom-modal">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3 class="modal-title">👤 PROFIL DU JOUEUR</h3>
+        <h3 id="profile-modal-title" class="modal-title">👤 PROFIL DU JOUEUR</h3>
         <button id="btn-close-profile" class="icon-btn">✕</button>
       </div>
       <div class="modal-body" style="gap: 18px;">
+        <div id="profile-modal-badge" class="profile-mandatory-badge" style="display: none;">
+          🚨 OBLIGATOIRE : CRÉEZ VOTRE PILOTE POUR REJOINDRE LE CLASSEMENT FRANCE !
+        </div>
+
         <div class="profile-input-group">
           <label>Pseudo de Pilote (Affiché sur le Classement France)</label>
           <input type="text" id="input-profile-pseudo" class="profile-input" maxlength="18" placeholder="Ex: CyberKev_FR">
+          <div id="profile-input-error" style="display: none; color: #ff3366; font-size: 0.85rem; font-weight: 700; margin-top: 5px;"></div>
         </div>
 
         <div class="profile-input-group">
           <label>Département / Région</label>
           <select id="input-profile-region" class="profile-input" style="cursor: pointer;">
-            <option value="75 - Paris">75 - Paris / Île-de-France</option>
-            <option value="69 - Lyon">69 - Lyon / Rhône-Alpes</option>
-            <option value="13 - Marseille">13 - Marseille / PACA</option>
-            <option value="33 - Bordeaux">33 - Bordeaux / Nouvelle-Aquitaine</option>
-            <option value="31 - Toulouse">31 - Toulouse / Occitanie</option>
-            <option value="59 - Lille">59 - Lille / Hauts-de-France</option>
-            <option value="44 - Nantes">44 - Nantes / Pays de la Loire</option>
-            <option value="35 - Rennes">35 - Rennes / Bretagne</option>
-            <option value="67 - Strasbourg">67 - Strasbourg / Grand Est</option>
-            <option value="06 - Nice">06 - Nice / Côte d'Azur</option>
-            <option value="Autre - France">Autre région / France</option>
+            <optgroup label="📍 Régions de France Métropolitaine">
+              <option value="Île-de-France (Paris - 75)">Île-de-France (Paris, 75, 77, 78, 91, 92, 93, 94, 95)</option>
+              <option value="Auvergne-Rhône-Alpes (Lyon - 69)">Auvergne-Rhône-Alpes (Lyon, Grenoble, Saint-Étienne, 69, 38, 42...)</option>
+              <option value="Provence-Alpes-Côte d'Azur (13/06)">Provence-Alpes-Côte d'Azur (Marseille, Nice, Toulon, 13, 06, 83...)</option>
+              <option value="Nouvelle-Aquitaine (Bordeaux - 33)">Nouvelle-Aquitaine (Bordeaux, Limoges, Poitiers, 33, 87, 86, 17...)</option>
+              <option value="Occitanie (Toulouse / Montpellier - 31/34)">Occitanie (Toulouse, Montpellier, Nîmes, 31, 34, 30, 66...)</option>
+              <option value="Hauts-de-France (Lille - 59)">Hauts-de-France (Lille, Amiens, Dunkerque, 59, 62, 80, 60...)</option>
+              <option value="Grand Est (Strasbourg - 67)">Grand Est (Strasbourg, Reims, Metz, Nancy, 67, 68, 51, 57...)</option>
+              <option value="Bretagne (Rennes - 35)">Bretagne (Rennes, Brest, Quimper, Vannes, 35, 29, 56, 22...)</option>
+              <option value="Pays de la Loire (Nantes - 44)">Pays de la Loire (Nantes, Angers, Le Mans, 44, 49, 72, 85...)</option>
+              <option value="Normandie (Rouen / Caen - 76/14)">Normandie (Rouen, Caen, Le Havre, 76, 14, 27, 50, 61...)</option>
+              <option value="Bourgogne-Franche-Comté (Dijon - 21)">Bourgogne-Franche-Comté (Dijon, Besançon, Belfort, 21, 25, 71...)</option>
+              <option value="Centre-Val de Loire (Orléans / Tours - 45/37)">Centre-Val de Loire (Orléans, Tours, Bourges, 45, 37, 18, 28...)</option>
+              <option value="Corse (Ajaccio / Bastia - 2A/2B)">Corse (Ajaccio, Bastia, 2A, 2B)</option>
+            </optgroup>
+            <optgroup label="🌴 Régions & Territoires d'Outre-Mer (DROM-COM)">
+              <option value="Guadeloupe (971)">Guadeloupe (971)</option>
+              <option value="Martinique (972)">Martinique (972)</option>
+              <option value="Guyane (973)">Guyane (973)</option>
+              <option value="La Réunion (974)">La Réunion (974)</option>
+              <option value="Mayotte (976)">Mayotte (976)</option>
+              <option value="Polynésie française (987)">Polynésie française (987)</option>
+              <option value="Nouvelle-Calédonie (988)">Nouvelle-Calédonie (988)</option>
+              <option value="Autre Territoire d'Outre-Mer">Autre Territoire d'Outre-Mer (St-Pierre, Wallis...)</option>
+            </optgroup>
+            <optgroup label="🌍 Francophonie & International">
+              <option value="Belgique">Belgique</option>
+              <option value="Suisse">Suisse</option>
+              <option value="Québec / Canada">Québec / Canada</option>
+              <option value="Autre pays / Monde">Autre pays / Monde</option>
+            </optgroup>
           </select>
         </div>
 
@@ -534,7 +559,7 @@
           </div>
         </div>
 
-        <button id="btn-save-profile" class="primary-btn" style="width: 100%; justify-content: center; margin-top: 10px;">ENREGISTRER MON PROFIL</button>
+        <button id="btn-save-profile" class="primary-btn" style="width: 100%; justify-content: center; margin-top: 10px;">ENREGISTRER ET JOUER ▶</button>
       </div>
     </div>
   </div>
