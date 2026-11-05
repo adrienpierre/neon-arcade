@@ -516,16 +516,76 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Touch controls
+  // Touch on-screen virtual buttons with continuous press-and-hold
+  let touchHoldInterval = null;
+  const triggerTouch = (action) => {
+    if (isGameRunning && !isGamePaused && currentGame) {
+      currentGame.handleTouch(action);
+    }
+  };
+
   document.querySelectorAll('.touch-btn').forEach(btn => {
+    const action = btn.getAttribute('data-action');
+
     btn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      const action = btn.getAttribute('data-action');
-      if (isGameRunning && !isGamePaused && currentGame) {
-        currentGame.handleTouch(action);
-      }
+      triggerTouch(action);
+
+      // Repeat action smoothly while finger is held down
+      if (touchHoldInterval) clearInterval(touchHoldInterval);
+      touchHoldInterval = setInterval(() => {
+        triggerTouch(action);
+      }, 70);
     });
+
+    const stopHold = () => {
+      if (touchHoldInterval) {
+        clearInterval(touchHoldInterval);
+        touchHoldInterval = null;
+      }
+    };
+
+    btn.addEventListener('pointerup', stopHold);
+    btn.addEventListener('pointercancel', stopHold);
+    btn.addEventListener('pointerleave', stopHold);
   });
+
+  // Direct Mobile Canvas Swipe & Tap Gestures (Native Mobile Feel!)
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+
+  gameCanvas.addEventListener('touchstart', (e) => {
+    if (!isGameRunning || isGamePaused || !currentGame) return;
+    if (e.touches.length > 0) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = performance.now();
+    }
+  }, { passive: true });
+
+  gameCanvas.addEventListener('touchend', (e) => {
+    if (!isGameRunning || isGamePaused || !currentGame) return;
+    if (e.changedTouches.length > 0) {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      const dt = performance.now() - touchStartTime;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      if (absX > 25 || absY > 25) {
+        // Swipe detected
+        if (absX > absY) {
+          currentGame.handleTouch(dx > 0 ? 'right' : 'left');
+        } else {
+          currentGame.handleTouch(dy > 0 ? 'down' : 'up');
+        }
+      } else if (dt < 300) {
+        // Quick tap anywhere on the canvas
+        currentGame.handleTouch('action');
+      }
+    }
+  }, { passive: true });
 
   // --- Audio Toggles ---
   btnToggleSound.addEventListener('click', () => {
