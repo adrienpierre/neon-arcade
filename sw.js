@@ -2,7 +2,7 @@
    NEON ARCADE - SERVICE WORKER (OFFLINE PWA CACHE)
    ========================================================= */
 
-const CACHE_NAME = 'neon-arcade-v16';
+const CACHE_NAME = 'neon-arcade-v18';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

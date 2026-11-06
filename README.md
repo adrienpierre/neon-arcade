@@ -30,3 +30,7 @@ Bienvenue dans **NEON ARCADE ULTRA**, la plateforme de 10 mini-jeux d'arcade com
 ### 4. Partage Viral X (Twitter) & Discord en 1 Clic (`share.js`)
 - Génération d'une **carte de record holographique en PNG**.
 - Boutons directs pour tweeter votre score ou copier un bloc Markdown prêt pour Discord.
+
+### 5. Secret Konami Spécial France 🥖
+- Tapez au clavier : `↑ ↑ ↓ ↓ ← → ← → B A`.
+- Débloque **+1 000 Crédits**, le thème Or et le succès secret *"Légende de la Baguette"*.
