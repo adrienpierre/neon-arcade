@@ -998,39 +998,190 @@ body.crt-active .crt-overlay {
   object-fit: contain;
 }
 
-.touch-controls-bar {
+/* =========================================================
+   ERGONOMIC VIRTUAL GAMEPAD (DUAL-CLUSTER FOR THUMBS)
+   ========================================================= */
+.touch-gamepad {
   display: none;
   position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  gap: 12px;
-  z-index: 50;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 8px 16px;
-  border-radius: 40px;
-  border: 1px solid var(--border-color);
+  bottom: 10px;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  width: 100%;
+  padding: 0 14px;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+  z-index: 60;
+}
+
+.touch-cluster-left,
+.touch-cluster-right,
+.touch-cluster-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.touch-cluster-left {
+  background: rgba(8, 12, 28, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 6px 8px;
+  border-radius: 28px;
+  border: 1px solid rgba(0, 240, 255, 0.28);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+}
+
+.touch-v-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.touch-cluster-right {
+  background: rgba(8, 12, 28, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 6px 8px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 0, 127, 0.28);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
 }
 
 .touch-btn {
-  width: 52px;
-  height: 52px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid var(--accent);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid var(--accent);
   color: #fff;
-  font-size: 1.3rem;
+  font-size: 1.25rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.08s ease, background 0.08s ease;
 }
 
 .touch-btn:active {
   background: var(--accent);
   color: #000;
-  transform: scale(0.92);
+  transform: scale(0.90);
+  box-shadow: 0 0 16px var(--accent);
+}
+
+.touch-btn-action.btn-action {
+  border-color: var(--neon-pink);
+  background: rgba(255, 0, 127, 0.22);
+  width: 56px;
+  height: 56px;
+  font-size: 1.35rem;
+}
+.touch-btn-action.btn-action:active {
+  background: var(--neon-pink);
+  color: #fff;
+  box-shadow: 0 0 18px var(--neon-pink);
+}
+
+.touch-btn-action.btn-rotate {
+  border-color: var(--neon-yellow);
+  color: var(--neon-yellow);
+}
+
+.touch-btn-action.btn-hold {
+  border-color: #9d4edd;
+  color: #d8b4fe;
+}
+
+.touch-cluster-center {
+  display: none;
+  flex: 1;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.touch-btn-flap {
+  width: 100%;
+  height: 52px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(255, 0, 127, 0.3));
+  border: 1.5px solid var(--neon-cyan);
+  color: #fff;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+}
+
+/* =========================================================
+   PER-GAME CONTEXTUAL TOUCH CONTROLS
+   ========================================================= */
+/* Cyber Flap: only big center jump button */
+.touch-gamepad[data-game="flap"] .touch-cluster-left,
+.touch-gamepad[data-game="flap"] .touch-cluster-right {
+  display: none !important;
+}
+.touch-gamepad[data-game="flap"] .touch-cluster-center {
+  display: flex !important;
+}
+
+/* Aim Trainer & Memory Matrix: direct screen tap only */
+.touch-gamepad[data-game="aim"],
+.touch-gamepad[data-game="memory"] {
+  display: none !important;
+}
+
+/* Neon Katana (Slicer): only subtle bullet time button if active */
+.touch-gamepad[data-game="slicer"] .touch-cluster-left,
+.touch-gamepad[data-game="slicer"] .btn-hold,
+.touch-gamepad[data-game="slicer"] .btn-rotate {
+  display: none !important;
+}
+
+/* Laser Breakout: Left/Right + Serve/Laser */
+.touch-gamepad[data-game="breakout"] .touch-v-group,
+.touch-gamepad[data-game="breakout"] .btn-hold,
+.touch-gamepad[data-game="breakout"] .btn-rotate {
+  display: none !important;
+}
+
+/* Space Void: Left/Right + Shoot + Bullet/Bomb */
+.touch-gamepad[data-game="space"] .touch-v-group,
+.touch-gamepad[data-game="space"] .btn-rotate {
+  display: none !important;
+}
+
+/* Cyberdrift (Racer): Auto-drive, only Left/Right on left thumb + Turbo on right thumb */
+.touch-gamepad[data-game="racer"] .touch-v-group,
+.touch-gamepad[data-game="racer"] .btn-hold,
+.touch-gamepad[data-game="racer"] .btn-rotate {
+  display: none !important;
+}
+
+/* Orbital Vortex: Left / Right rotation buttons */
+.touch-gamepad[data-game="vortex"] .touch-v-group,
+.touch-gamepad[data-game="vortex"] .btn-hold,
+.touch-gamepad[data-game="vortex"] .btn-rotate {
+  display: none !important;
+}
+
+/* Quantum Stacker (Tetris): All controls visible (Left, Right, Down on left; Rotate, Drop, Hold on right) */
+.touch-gamepad[data-game="stacker"] .btn-up {
+  display: none !important;
+}
+
+/* Neon Snake: 4-way D-pad on left + Turbo on right */
+.touch-gamepad[data-game="snake"] .btn-hold,
+.touch-gamepad[data-game="snake"] .btn-rotate {
+  display: none !important;
 }
 
 .arena-overlay-layer {
@@ -1671,29 +1822,33 @@ body.crt-active .crt-overlay {
   }
 
   .arena-body {
-    padding: 0.4rem;
+    padding: 0.2rem;
+    position: relative;
+    overflow: hidden;
   }
   #game-canvas {
     max-width: 100%;
-    max-height: calc(100dvh - 145px);
+    max-height: calc(100dvh - 160px);
     object-fit: contain;
     touch-action: none;
   }
 
-  /* Virtual Touch On-Screen Controls */
-  .touch-controls-bar {
+  /* Virtual Touch On-Screen Gamepad */
+  .touch-gamepad {
     display: flex;
     bottom: 8px;
     bottom: max(8px, env(safe-area-inset-bottom));
-    gap: 8px;
-    padding: 6px 12px;
-    background: rgba(4, 6, 16, 0.85);
-    border: 1px solid rgba(0, 240, 255, 0.3);
+    padding: 0 8px;
   }
   .touch-btn {
     width: 48px;
     height: 48px;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
+  }
+  .touch-btn-action.btn-action {
+    width: 52px;
+    height: 52px;
+    font-size: 1.25rem;
   }
 
   /* Game Over Overlay */
