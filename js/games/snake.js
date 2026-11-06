@@ -96,6 +96,11 @@ class SnakeGame {
 
   stop() {
     this.running = false;
+    this.isTurbo = false;
+    if (this.canvas) {
+      this.canvas.onpointerdown = null;
+      this.canvas.onpointermove = null;
+    }
     if (this.loopId) cancelAnimationFrame(this.loopId);
   }
 
@@ -172,6 +177,8 @@ class SnakeGame {
     if (action === 'down' && this.dir.y === 0) this.nextDir = { x: 0, y: 1 };
     if (action === 'left' && this.dir.x === 0) this.nextDir = { x: -1, y: 0 };
     if (action === 'right' && this.dir.x === 0) this.nextDir = { x: 1, y: 0 };
+    if (action === 'turbo_start') this.isTurbo = true;
+    if (action === 'turbo_end') this.isTurbo = false;
     if (action === 'action' || action === 'turbo') this.isTurbo = !this.isTurbo;
     if (navigator.vibrate) {
       try { navigator.vibrate(8); } catch(e) {}

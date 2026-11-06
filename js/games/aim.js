@@ -78,6 +78,10 @@ class AimGame {
 
   stop() {
     this.running = false;
+    if (this.canvas) {
+      this.canvas.onpointermove = null;
+      this.canvas.onpointerdown = null;
+    }
     if (this.loopId) cancelAnimationFrame(this.loopId);
   }
 

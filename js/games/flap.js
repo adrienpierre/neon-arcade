@@ -56,6 +56,12 @@ class FlapGame {
     }
 
     this.reset();
+
+    // Mouse click or touch anywhere on canvas to flap
+    this.canvas.onpointerdown = () => {
+      if (!this.running || this.paused) return;
+      this.jump();
+    };
   }
 
   reset() {
@@ -90,11 +96,14 @@ class FlapGame {
 
   stop() {
     this.running = false;
+    if (this.canvas) {
+      this.canvas.onpointerdown = null;
+    }
     if (this.loopId) cancelAnimationFrame(this.loopId);
   }
 
   handleKey(e) {
-    if (e.type === 'keydown' && (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W')) {
+    if (e.type === 'keydown' && (e.key === ' ' || e.key === 'Spacebar' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === 'z' || e.key === 'Z' || e.key === 'Enter')) {
       this.jump();
     }
   }

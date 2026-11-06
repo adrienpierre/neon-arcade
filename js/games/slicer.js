@@ -97,6 +97,12 @@ class SlicerGame {
 
   stop() {
     this.running = false;
+    this.isMouseDown = false;
+    if (this.canvas) {
+      this.canvas.onpointerdown = null;
+      this.canvas.onpointermove = null;
+      this.canvas.onpointerup = null;
+    }
     if (this.loopId) cancelAnimationFrame(this.loopId);
   }
 

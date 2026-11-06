@@ -63,6 +63,19 @@ class SpaceGame {
       });
     }
 
+    // Mouse movement for PC ship positioning & firing
+    this.canvas.onpointermove = (e) => {
+      if (!this.running || this.paused) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+      this.player.x = Math.max(20, Math.min(this.canvas.width - 20, x));
+    };
+
+    this.canvas.onpointerdown = () => {
+      if (!this.running || this.paused) return;
+      this.shoot();
+    };
+
     this.reset();
   }
 
@@ -106,6 +119,10 @@ class SpaceGame {
 
   stop() {
     this.running = false;
+    if (this.canvas) {
+      this.canvas.onpointermove = null;
+      this.canvas.onpointerdown = null;
+    }
     if (this.loopId) cancelAnimationFrame(this.loopId);
   }
 
@@ -258,14 +275,14 @@ class SpaceGame {
       }
     }
 
-    // Controls
-    if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A']) {
+    // Controls (Arrow keys + WASD + ZQSD)
+    if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A'] || this.keys['q'] || this.keys['Q']) {
       this.player.x -= this.player.speed;
     }
     if (this.keys['ArrowRight'] || this.keys['d'] || this.keys['D']) {
       this.player.x += this.player.speed;
     }
-    if (this.keys[' ']) {
+    if (this.keys[' '] || this.keys['Spacebar']) {
       this.shoot();
     }
 

@@ -88,6 +88,10 @@ class VortexGame {
 
   stop() {
     this.running = false;
+    if (this.canvas) {
+      this.canvas.onpointermove = null;
+      this.canvas.onpointerdown = null;
+    }
     if (this.loopId) cancelAnimationFrame(this.loopId);
   }
 
@@ -136,8 +140,8 @@ class VortexGame {
   }
 
   update() {
-    // Keyboard rotation
-    if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A']) {
+    // Keyboard rotation (Arrow keys + WASD + ZQSD)
+    if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A'] || this.keys['q'] || this.keys['Q']) {
       this.shieldAngle -= 0.08;
     }
     if (this.keys['ArrowRight'] || this.keys['d'] || this.keys['D']) {

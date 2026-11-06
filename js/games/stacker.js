@@ -103,6 +103,10 @@ class StackerGame {
 
   stop() {
     this.running = false;
+    if (this.canvas) {
+      this.canvas.onpointerdown = null;
+      this.canvas.onpointermove = null;
+    }
     if (this.loopId) cancelAnimationFrame(this.loopId);
   }
 

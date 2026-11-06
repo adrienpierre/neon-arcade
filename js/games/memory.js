@@ -101,6 +101,9 @@ class MemoryGame {
 
   stop() {
     this.running = false;
+    if (this.canvas) {
+      this.canvas.onpointerdown = null;
+    }
     if (this.loopId) cancelAnimationFrame(this.loopId);
     if (this.playbackTimer) clearTimeout(this.playbackTimer);
   }
@@ -174,10 +177,14 @@ class MemoryGame {
     if (!this.running || this.paused || this.state !== 'waiting_input') return;
     if (e.type !== 'keydown') return;
 
-    if (e.key === '1' || e.key === 'q' || e.key === 'Q') this.playerChoose(0);
-    if (e.key === '2' || e.key === 'w' || e.key === 'W') this.playerChoose(1);
-    if (e.key === '3' || e.key === 'a' || e.key === 'A') this.playerChoose(2);
-    if (e.key === '4' || e.key === 's' || e.key === 'S') this.playerChoose(3);
+    // Pad 0 (Top-Left): 1, &, Q, A, Numpad 7
+    if (e.key === '1' || e.key === '&' || e.key === 'q' || e.key === 'Q' || e.key === 'a' || e.key === 'A' || e.key === '7') this.playerChoose(0);
+    // Pad 1 (Top-Right): 2, é, W, Z, ArrowUp, Numpad 9
+    if (e.key === '2' || e.key === 'é' || e.key === 'É' || e.key === 'w' || e.key === 'W' || e.key === 'z' || e.key === 'Z' || e.key === 'ArrowUp' || e.key === '9') this.playerChoose(1);
+    // Pad 2 (Bottom-Left): 3, ", S, ArrowLeft, Numpad 1
+    if (e.key === '3' || e.key === '"' || e.key === 's' || e.key === 'S' || e.key === 'ArrowLeft' || e.key === '1') this.playerChoose(2);
+    // Pad 3 (Bottom-Right): 4, ', D, ArrowDown, ArrowRight, Numpad 3
+    if (e.key === '4' || e.key === "'" || e.key === 'd' || e.key === 'D' || e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === '3') this.playerChoose(3);
   }
 
   handleTouch(action) {

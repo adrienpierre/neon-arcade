@@ -14,8 +14,10 @@ class RacerGame {
     this.player = {
       x: 0, // -1 (left edge) to 1 (right edge)
       speed: 0,
-      maxSpeed: 180,
-      accel: 0.8,
+      baseCruiseSpeed: 75,
+      maxSpeed: 135,
+      boostSpeed: 210,
+      accel: 0.9,
       boost: 0,
       invulnerable: 0
     };
@@ -52,6 +54,19 @@ class RacerGame {
     this.canvas.width = 700;
     this.canvas.height = 500;
 
+    // Mouse movement steering on PC
+    this.canvas.onpointermove = (e) => {
+      if (!this.running || this.paused) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const normX = (((e.clientX - rect.left) / rect.width) - 0.5) * 2;
+      this.player.x = Math.max(-0.92, Math.min(0.92, normX * 1.25));
+    };
+
+    this.canvas.onpointerdown = () => {
+      if (!this.running || this.paused) return;
+      this.triggerTurbo();
+    };
+
     this.buildRoad();
     this.reset();
   }
@@ -77,21 +92,17 @@ class RacerGame {
   }
 
   respawnCar(car, targetZ) {
-    // 7 lanes across the road including center (0.0) to prevent straight-line idling
-    const lanes = [-0.70, -0.45, -0.20, 0.0, 0.20, 0.45, 0.70];
+    // 5 clear, spacious lanes across the highway
+    const lanes = [-0.65, -0.32, 0.0, 0.32, 0.65];
     const colors = ['#ffe600', '#00ff88', '#ff007f', '#9d4edd', '#00f0ff', '#ff5500', '#ff00aa', '#00e5ff'];
 
-    // Balanced proportions: 65% classic cyber cars, 18% weavers, 10% trucks, 7% hazard barriers
+    // 80% cyber cars, 20% gentle weavers (no stationary road hazards)
     const roll = Math.random();
-    let type = 'car';
-    if (roll < 0.65) type = 'car';
-    else if (roll < 0.83) type = 'weaver';
-    else if (roll < 0.93) type = 'truck';
-    else type = 'barrier';
+    const type = roll < 0.80 ? 'car' : 'weaver';
 
     const chosenLane = lanes[Math.floor(Math.random() * lanes.length)];
-    const jitter = (Math.random() - 0.5) * 0.04;
-    const finalLane = Math.max(-0.80, Math.min(0.80, chosenLane + jitter));
+    const jitter = (Math.random() - 0.5) * 0.03;
+    const finalLane = Math.max(-0.75, Math.min(0.75, chosenLane + jitter));
 
     car.type = type;
     car.color = colors[Math.floor(Math.random() * colors.length)];
@@ -102,40 +113,35 @@ class RacerGame {
     car.hitCooldown = 0;
     car.nearMissed = false;
 
-    if (type === 'truck') {
-      car.speed = 42 + Math.random() * 12;
-      car.hitbox = 0.23; // slightly wider than car
-    } else if (type === 'barrier') {
-      car.speed = 0; // stationary hazard
-      car.hitbox = 0.18;
-    } else if (type === 'weaver') {
-      car.speed = 60 + Math.random() * 18;
-      car.hitbox = 0.16;
+    // Traffic speeds: calm 40-58 km/h with generous hitbox
+    if (type === 'weaver') {
+      car.speed = 46 + Math.random() * 12;
+      car.hitbox = 0.12;
     } else {
-      car.speed = 52 + Math.random() * 28;
-      car.hitbox = 0.16;
+      car.speed = 40 + Math.random() * 18;
+      car.hitbox = 0.12; // forgiving hitbox for enjoyable dodging
     }
   }
 
   reset() {
     this.position = 0;
     this.player.x = 0;
-    this.player.speed = 40; // Rolling start, car auto-accelerates to cruising speed!
+    this.player.speed = this.player.baseCruiseSpeed; // 75 km/h comfortable cruise
     this.player.boost = 0;
     this.player.invulnerable = 0;
     this.player.shield = window.cyberShop ? window.cyberShop.hasPerk('perk_shield') : false;
-    this.timeLeft = 45;
+    this.timeLeft = 60; // Generous 60s timer
     this.score = 0;
     this.distance = 0;
     this.gameTick = 0;
     this.particles.reset();
 
-    // 38 obstacles: perfectly balanced spacing (no 5s dead zones, no wall of cars)
+    // 18 traffic cars: generous spacing (1400-2000 units apart = 3-4s reaction time)
     this.traffic = [];
-    let spawnZ = 1800;
-    for (let i = 0; i < 38; i++) {
+    let spawnZ = 2200;
+    for (let i = 0; i < 18; i++) {
       const car = {};
-      spawnZ += 750 + Math.random() * 350;
+      spawnZ += 1400 + Math.random() * 600;
       this.respawnCar(car, spawnZ);
       this.traffic.push(car);
     }
@@ -162,6 +168,10 @@ class RacerGame {
 
   stop() {
     this.running = false;
+    if (this.canvas) {
+      this.canvas.onpointermove = null;
+      this.canvas.onpointerdown = null;
+    }
     if (this.loopId) cancelAnimationFrame(this.loopId);
   }
 
@@ -177,17 +187,17 @@ class RacerGame {
   }
 
   handleTouch(action) {
-    if (action === 'left') this.player.x = Math.max(-0.95, this.player.x - 0.16);
-    if (action === 'right') this.player.x = Math.min(0.95, this.player.x + 0.16);
-    if (action === 'up') this.player.speed = Math.min(this.player.maxSpeed, this.player.speed + 15);
-    if (action === 'down') this.player.speed = Math.max(0, this.player.speed - 20);
+    if (action === 'left') this.player.x = Math.max(-0.92, this.player.x - 0.12);
+    if (action === 'right') this.player.x = Math.min(0.92, this.player.x + 0.12);
+    if (action === 'up') this.player.speed = Math.min(this.player.maxSpeed, this.player.speed + 8);
+    if (action === 'down') this.player.speed = Math.max(45, this.player.speed - 10);
     if (action === 'action' || action === 'turbo') this.triggerTurbo();
   }
 
   handleDrag(x, y) {
     if (!this.running || this.paused) return;
     const normX = ((x / this.canvas.width) - 0.5) * 2;
-    this.player.x = Math.max(-0.95, Math.min(0.95, normX * 1.3));
+    this.player.x = Math.max(-0.92, Math.min(0.92, normX * 1.25));
   }
 
   triggerTurbo() {
@@ -224,37 +234,42 @@ class RacerGame {
       this.player.invulnerable--;
     }
 
-    // Auto-Acceleration: car automatically accelerates and cruises at max speed!
-    const targetMax = this.player.boost > 0 ? 250 : this.player.maxSpeed;
-    if (this.keys['ArrowDown'] || this.keys['s'] || this.keys['S']) {
-      // Optional brake when manually held
-      this.player.speed = Math.max(35, this.player.speed - 2.5);
-    } else {
-      // Smooth automatic acceleration to targetMax (cruises automatically)
-      if (this.player.speed < targetMax) {
-        this.player.speed = Math.min(targetMax, this.player.speed + 1.25);
-      } else if (this.player.speed > targetMax) {
-        this.player.speed = Math.max(targetMax, this.player.speed - 0.8);
-      }
-    }
+    // Accessible Speed Control:
+    // Base speed is 75 km/h (cruising, easy to steer).
+    // Holding Up/W/Z accelerates smoothly to 135 km/h.
+    // Holding Down/S slows down smoothly to 45 km/h.
+    // Nitro boosts to 210 km/h.
+    const isAccelerating = this.keys['ArrowUp'] || this.keys['w'] || this.keys['W'] || this.keys['z'] || this.keys['Z'];
+    const isBraking = this.keys['ArrowDown'] || this.keys['s'] || this.keys['S'];
 
     if (this.player.boost > 0) {
       this.player.boost--;
-      this.player.speed = Math.min(260, this.player.speed + 1.6);
+      this.player.speed = Math.min(this.player.boostSpeed, this.player.speed + 2.0);
+    } else if (isBraking) {
+      this.player.speed = Math.max(45, this.player.speed - 2.5);
+    } else if (isAccelerating) {
+      this.player.speed = Math.min(this.player.maxSpeed, this.player.speed + 1.2);
+    } else {
+      // Smoothly return to base cruising speed (75 km/h)
+      if (this.player.speed > this.player.baseCruiseSpeed) {
+        this.player.speed = Math.max(this.player.baseCruiseSpeed, this.player.speed - 0.7);
+      } else if (this.player.speed < this.player.baseCruiseSpeed) {
+        this.player.speed = Math.min(this.player.baseCruiseSpeed, this.player.speed + 1.0);
+      }
     }
 
-    // Steering (always agile and responsive)
-    const speedRatio = Math.max(0.65, this.player.speed / this.player.maxSpeed);
+    // Responsive and agile steering
     if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A'] || this.keys['q'] || this.keys['Q']) {
-      this.player.x -= 0.038 * speedRatio;
+      this.player.x -= 0.042;
     }
     if (this.keys['ArrowRight'] || this.keys['d'] || this.keys['D']) {
-      this.player.x += 0.038 * speedRatio;
+      this.player.x += 0.042;
     }
+    this.player.x = Math.max(-0.92, Math.min(0.92, this.player.x));
 
     // Off-road penalty
-    if (Math.abs(this.player.x) > 0.95 && this.player.speed > 50) {
-      this.player.speed = Math.max(40, this.player.speed - 1.5);
+    if (Math.abs(this.player.x) > 0.88 && this.player.speed > 60) {
+      this.player.speed = Math.max(50, this.player.speed - 1.2);
       this.particles.burst(this.canvas.width / 2 + (this.player.x * 120), this.canvas.height - 40, '#ff007f', 2, 2);
     }
 
@@ -267,10 +282,10 @@ class RacerGame {
       for (let i = 0; i < this.traffic.length; i++) {
         this.traffic[i].z -= maxTrack;
       }
-      this.timeLeft += 20; // Checkpoint!
+      this.timeLeft += 25; // Checkpoint bonus +25s!
       this.score += 500;
       this.particles.confetti(this.canvas.width, this.canvas.height);
-      this.particles.addFloatingText('CHECKPOINT ! +20 SEC', this.canvas.width / 2, 220, '#ffe600', 24);
+      this.particles.addFloatingText('CHECKPOINT ! +25 SEC', this.canvas.width / 2, 220, '#ffe600', 24);
       if (window.soundEngine) {
         window.soundEngine.playPowerup();
         window.soundEngine.announce('CHECKPOINT !');
@@ -297,19 +312,17 @@ class RacerGame {
 
       // Dynamic AI weaving behavior (smooth oscillation)
       if (car.type === 'weaver') {
-        car.offset = car.baseOffset + Math.sin(this.gameTick * 0.03 + car.seed) * 0.20;
-        car.offset = Math.max(-0.80, Math.min(0.80, car.offset));
+        car.offset = car.baseOffset + Math.sin(this.gameTick * 0.025 + car.seed) * 0.16;
+        car.offset = Math.max(-0.75, Math.min(0.75, car.offset));
       }
 
       // Check if car was overtaken and passed behind the camera
-      // Player is at this.position + this.playerZ (playerZ = 1000)
       if (car.z < this.position + 600) {
-        // Recycle to the front of the traffic queue ahead with balanced spacing!
-        let maxZ = this.position + 2000;
+        let maxZ = this.position + 2400;
         for (let j = 0; j < this.traffic.length; j++) {
           if (this.traffic[j].z > maxZ) maxZ = this.traffic[j].z;
         }
-        this.respawnCar(car, maxZ + 750 + Math.random() * 350);
+        this.respawnCar(car, maxZ + 1400 + Math.random() * 600);
         continue;
       }
 
@@ -319,12 +332,11 @@ class RacerGame {
       const relZ = car.z - this.position;
 
       // The player car sits at exactly playerZ = 1000 in front of the camera
-      // Check if this car is in the exact Z-slice of the player (between 860 and 1140)
       const inZRange = relZ >= 860 && relZ <= 1140;
 
       if (inZRange) {
         const lateralDist = Math.abs(this.player.x - car.offset);
-        const hitboxThreshold = car.hitbox || 0.17;
+        const hitboxThreshold = car.hitbox || 0.12;
 
         // Precise car width collision threshold
         if (lateralDist < hitboxThreshold && this.player.invulnerable <= 0 && car.hitCooldown <= 0) {
@@ -333,25 +345,25 @@ class RacerGame {
             this.player.shield = false;
             this.player.invulnerable = 60;
             car.hitCooldown = 60;
-            this.particles.shake(12, 6);
+            this.particles.shake(10, 5);
             this.particles.burst(this.canvas.width / 2, this.canvas.height - 70, '#00ff88', 35, 7);
             this.particles.addFloatingText('🛡 CHOC DÉVIÉ PAR LE BOUCLIER !', this.canvas.width / 2, 300, '#00ff88', 22);
             if (window.soundEngine) window.soundEngine.playBounce();
           } else {
-            // REAL COLLISION
-            this.player.speed = Math.max(25, this.player.speed * 0.35);
+            // SOFT COLLISION PENALTY: slows car to 55 km/h instead of 25 km/h
+            this.player.speed = Math.max(55, this.player.speed * 0.70);
             this.player.boost = 0;
-            this.player.invulnerable = 45; // 0.75s invulnerability blink
+            this.player.invulnerable = 50; // 0.8s invulnerability blink
             car.hitCooldown = 60;
 
-            this.particles.shake(18, 9);
-            this.particles.burst(this.canvas.width / 2, this.canvas.height - 70, '#ff3366', 25, 5);
-            this.particles.addFloatingText('COLLISION !', this.canvas.width / 2, 300, '#ff3366', 20);
+            this.particles.shake(12, 6);
+            this.particles.burst(this.canvas.width / 2, this.canvas.height - 70, '#ff3366', 20, 4);
+            this.particles.addFloatingText('TOUCHÉ !', this.canvas.width / 2, 300, '#ff3366', 20);
 
-            if (navigator.vibrate) navigator.vibrate([60, 40, 80]);
+            if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
             if (window.soundEngine) window.soundEngine.playExplosion();
           }
-        } else if (lateralDist >= hitboxThreshold && lateralDist < hitboxThreshold + 0.14 && !car.nearMissed) {
+        } else if (lateralDist >= hitboxThreshold && lateralDist < hitboxThreshold + 0.16 && !car.nearMissed) {
           // NEAR MISS REWARD (Slalom bonus!)
           car.nearMissed = true;
           this.score += 60;

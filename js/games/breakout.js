@@ -46,12 +46,23 @@ class BreakoutGame {
     this.canvas.width = 700;
     this.canvas.height = 500;
 
-    // Direct click/tap to serve ball
-    this.canvas.addEventListener('pointerdown', () => {
-      if (!this.ballServed && this.running && !this.paused) {
+    // Mouse movement for PC paddle control
+    this.canvas.onpointermove = (e) => {
+      if (!this.running || this.paused) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+      this.paddle.x = Math.max(this.paddle.width / 2, Math.min(this.canvas.width - this.paddle.width / 2, x));
+    };
+
+    // Click to serve ball or fire laser
+    this.canvas.onpointerdown = () => {
+      if (!this.running || this.paused) return;
+      if (!this.ballServed) {
         this.serveBall();
+      } else if (this.paddle.lasers > 0) {
+        this.firePaddleLaser();
       }
-    });
+    };
 
     this.reset();
   }
@@ -165,6 +176,10 @@ class BreakoutGame {
 
   stop() {
     this.running = false;
+    if (this.canvas) {
+      this.canvas.onpointermove = null;
+      this.canvas.onpointerdown = null;
+    }
     if (this.loopId) cancelAnimationFrame(this.loopId);
   }
 
@@ -208,8 +223,8 @@ class BreakoutGame {
   }
 
   update() {
-    // Paddle movement
-    if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A']) {
+    // Paddle movement (Arrow keys + WASD + ZQSD)
+    if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A'] || this.keys['q'] || this.keys['Q']) {
       this.paddle.x -= this.paddle.speed;
     }
     if (this.keys['ArrowRight'] || this.keys['d'] || this.keys['D']) {
