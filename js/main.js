@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'action',
       tag: 'OutRun Pseudo-3D',
       description: 'Course rétro-synthwave à pleine vitesse ! Slalomez entre les véhicules, déclenchez la nitro et passez les checkpoints !',
-      controls: 'Flèches pour diriger & accélérer • Espace pour Nitro',
+      controls: 'Auto-accélération • Gauche / Droite pour slalomer • Espace pour Nitro',
       instance: new RacerGame()
     },
     slicer: {
@@ -385,6 +385,11 @@ document.addEventListener('DOMContentLoaded', () => {
     gameModal.classList.add('active');
     overlayScreen.classList.remove('active');
 
+    const touchGamepad = document.getElementById('touch-gamepad');
+    if (touchGamepad) {
+      touchGamepad.setAttribute('data-game', key);
+    }
+
     // Init & Start game instance
     currentGame.init(
       gameCanvas,
@@ -460,6 +465,10 @@ document.addEventListener('DOMContentLoaded', () => {
     isGamePaused = false;
     gameModal.classList.remove('active');
     overlayScreen.classList.remove('active');
+    const touchGamepad = document.getElementById('touch-gamepad');
+    if (touchGamepad) {
+      touchGamepad.removeAttribute('data-game');
+    }
     window.arcadeState.updateUI();
   }
 
@@ -516,11 +525,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Touch on-screen virtual buttons with continuous press-and-hold
+  // Touch on-screen virtual buttons with ergonomic touch handling & haptics
   let touchHoldInterval = null;
   const triggerTouch = (action) => {
     if (isGameRunning && !isGamePaused && currentGame) {
       currentGame.handleTouch(action);
+      if (navigator.vibrate) {
+        try { navigator.vibrate(10); } catch(e) {}
+      }
     }
   };
 
@@ -531,11 +543,13 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       triggerTouch(action);
 
-      // Repeat action smoothly while finger is held down
-      if (touchHoldInterval) clearInterval(touchHoldInterval);
-      touchHoldInterval = setInterval(() => {
-        triggerTouch(action);
-      }, 70);
+      // Only repeat directional movements while held
+      if (action === 'left' || action === 'right' || action === 'up' || action === 'down') {
+        if (touchHoldInterval) clearInterval(touchHoldInterval);
+        touchHoldInterval = setInterval(() => {
+          triggerTouch(action);
+        }, 70);
+      }
     });
 
     const stopHold = () => {
@@ -550,22 +564,55 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('pointerleave', stopHold);
   });
 
-  // Direct Mobile Canvas Swipe & Tap Gestures (Native Mobile Feel!)
+  // Direct Mobile Canvas Drag, Swipe & Tap Gestures (Silky Smooth Native Mobile Feel!)
+  let isTouchingCanvas = false;
   let touchStartX = 0;
   let touchStartY = 0;
   let touchStartTime = 0;
 
+  const getCanvasCoords = (touch) => {
+    const rect = gameCanvas.getBoundingClientRect();
+    const scaleX = gameCanvas.width / rect.width;
+    const scaleY = gameCanvas.height / rect.height;
+    return {
+      x: (touch.clientX - rect.left) * scaleX,
+      y: (touch.clientY - rect.top) * scaleY
+    };
+  };
+
   gameCanvas.addEventListener('touchstart', (e) => {
     if (!isGameRunning || isGamePaused || !currentGame) return;
     if (e.touches.length > 0) {
+      isTouchingCanvas = true;
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
       touchStartTime = performance.now();
+
+      const coords = getCanvasCoords(e.touches[0]);
+      if (currentGame.handleDrag) {
+        currentGame.handleDrag(coords.x, coords.y);
+      }
+      if (currentGameKey === 'flap') {
+        currentGame.handleTouch('action');
+      }
     }
-  }, { passive: true });
+  }, { passive: false });
+
+  gameCanvas.addEventListener('touchmove', (e) => {
+    if (!isGameRunning || isGamePaused || !currentGame) return;
+    if (e.touches.length > 0 && isTouchingCanvas) {
+      const coords = getCanvasCoords(e.touches[0]);
+      if (currentGame.handleDrag) {
+        currentGame.handleDrag(coords.x, coords.y);
+      }
+      // Prevent pull-to-refresh & screen scrolling during gameplay
+      if (e.cancelable) e.preventDefault();
+    }
+  }, { passive: false });
 
   gameCanvas.addEventListener('touchend', (e) => {
     if (!isGameRunning || isGamePaused || !currentGame) return;
+    isTouchingCanvas = false;
     if (e.changedTouches.length > 0) {
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = e.changedTouches[0].clientY - touchStartY;
@@ -581,11 +628,17 @@ document.addEventListener('DOMContentLoaded', () => {
           currentGame.handleTouch(dy > 0 ? 'down' : 'up');
         }
       } else if (dt < 300) {
-        // Quick tap anywhere on the canvas
-        currentGame.handleTouch('action');
+        // Quick tap: only fire action for games without their own direct pointerdown listeners
+        if (currentGameKey !== 'slicer' && currentGameKey !== 'aim' && currentGameKey !== 'memory') {
+          currentGame.handleTouch('action');
+        }
       }
     }
   }, { passive: true });
+
+  gameCanvas.addEventListener('touchcancel', () => {
+    isTouchingCanvas = false;
+  });
 
   // --- Audio Toggles ---
   btnToggleSound.addEventListener('click', () => {
