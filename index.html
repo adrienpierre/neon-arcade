@@ -454,13 +454,29 @@
       <!-- Main Canvas for Active Game -->
       <canvas id="game-canvas"></canvas>
 
-      <!-- On-Screen Virtual Touch Controls (D-Pad & Action Button for Mobile) -->
-      <div class="touch-controls-bar">
-        <button class="touch-btn" data-action="left">◀</button>
-        <button class="touch-btn" data-action="up">▲</button>
-        <button class="touch-btn" data-action="down">▼</button>
-        <button class="touch-btn" data-action="right">▶</button>
-        <button class="touch-btn" data-action="action" style="border-color: var(--neon-pink); background: rgba(255, 0, 127, 0.25);">⚡</button>
+      <!-- On-Screen Virtual Touch Gamepad (Dual-Cluster Mobile Architecture) -->
+      <div id="touch-gamepad" class="touch-gamepad">
+        <!-- Left Cluster (Directional D-Pad for Left Thumb) -->
+        <div class="touch-cluster-left">
+          <button class="touch-btn touch-btn-dir btn-left" data-action="left" aria-label="Gauche">◀</button>
+          <div class="touch-v-group">
+            <button class="touch-btn touch-btn-dir btn-up" data-action="up" aria-label="Haut">▲</button>
+            <button class="touch-btn touch-btn-dir btn-down" data-action="down" aria-label="Bas">▼</button>
+          </div>
+          <button class="touch-btn touch-btn-dir btn-right" data-action="right" aria-label="Droite">▶</button>
+        </div>
+
+        <!-- Center Prompt (One-Touch Giant Action for Cyber Flap) -->
+        <div class="touch-cluster-center">
+          <button class="touch-btn touch-btn-flap" data-action="action" aria-label="Voler / Sauter">🚀 SAUTER / VOLER</button>
+        </div>
+
+        <!-- Right Cluster (Action Buttons for Right Thumb) -->
+        <div class="touch-cluster-right">
+          <button class="touch-btn touch-btn-action btn-hold" data-action="hold" title="Réserve / Bonus" aria-label="Réserve">📦</button>
+          <button class="touch-btn touch-btn-action btn-rotate" data-action="rotate" title="Rotation" aria-label="Rotation">🔄</button>
+          <button class="touch-btn touch-btn-action btn-action" data-action="action" title="Action / Tir / Turbo" aria-label="Action">⚡</button>
+        </div>
       </div>
 
       <!-- Overlay Layer (Pause / Game Over) -->
