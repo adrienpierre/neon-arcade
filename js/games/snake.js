@@ -172,7 +172,10 @@ class SnakeGame {
     if (action === 'down' && this.dir.y === 0) this.nextDir = { x: 0, y: 1 };
     if (action === 'left' && this.dir.x === 0) this.nextDir = { x: -1, y: 0 };
     if (action === 'right' && this.dir.x === 0) this.nextDir = { x: 1, y: 0 };
-    if (action === 'action') this.isTurbo = !this.isTurbo;
+    if (action === 'action' || action === 'turbo') this.isTurbo = !this.isTurbo;
+    if (navigator.vibrate) {
+      try { navigator.vibrate(8); } catch(e) {}
+    }
   }
 
   update() {

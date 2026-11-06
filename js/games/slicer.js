@@ -159,6 +159,9 @@ class SlicerGame {
       if (dist <= t.radius) {
         // Sliced!
         this.targets.splice(i, 1);
+        if (navigator.vibrate) {
+          try { navigator.vibrate(t.isBomb ? [30, 40, 30] : 12); } catch(e) {}
+        }
 
         if (t.isBomb) {
           if (this.shield) {

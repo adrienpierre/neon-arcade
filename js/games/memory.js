@@ -191,6 +191,9 @@ class MemoryGame {
 
   playerChoose(padId) {
     this.activatePad(padId, true);
+    if (navigator.vibrate) {
+      try { navigator.vibrate(12); } catch(e) {}
+    }
 
     if (padId === this.sequence[this.playerStep]) {
       // Correct!

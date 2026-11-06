@@ -392,8 +392,10 @@ class StackerGame {
         this.current.y++;
         this.score += 1;
       }
-    } else if (action === 'up') {
+    } else if (action === 'up' || action === 'rotate') {
       this.tryRotate();
+    } else if (action === 'hold') {
+      this.holdPiece();
     } else if (action === 'action') {
       if (now - this.lastActionTime < 280) return;
       this.lastActionTime = now;

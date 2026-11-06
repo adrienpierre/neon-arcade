@@ -119,13 +119,19 @@ class AimGame {
     let hit = false;
     this.particles.burst(x, y, '#00f0ff', 6, 2);
 
+    // Touch friendly tolerance (+8px) for mobile fingers
+    const touchTolerance = (window.ontouchstart !== undefined || 'ontouchstart' in window) ? 10 : 2;
+
     for (let i = this.targets.length - 1; i >= 0; i--) {
       const t = this.targets[i];
       const dist = Math.hypot(t.x - x, t.y - y);
 
-      if (dist <= t.baseRadius) {
+      if (dist <= t.baseRadius + touchTolerance) {
         hit = true;
         this.targets.splice(i, 1);
+        if (navigator.vibrate) {
+          try { navigator.vibrate(t.isBomb ? [30, 40, 30] : 10); } catch(e) {}
+        }
 
         if (t.isBomb) {
           // Clicked a bomb!

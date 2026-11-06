@@ -14,9 +14,9 @@ class BreakoutGame {
     this.paddle = {
       x: 350,
       y: 460,
-      width: 100,
+      width: 120,
       height: 14,
-      speed: 8,
+      speed: 9,
       lasers: 0
     };
 
@@ -25,6 +25,9 @@ class BreakoutGame {
     this.powerups = [];
     this.lasers = [];
     this.keys = {};
+
+    this.ballServed = false;
+    this.serveTimer = 0;
 
     this.score = 0;
     this.lives = 3;
@@ -43,22 +46,64 @@ class BreakoutGame {
     this.canvas.width = 700;
     this.canvas.height = 500;
 
+    // Direct click/tap to serve ball
+    this.canvas.addEventListener('pointerdown', () => {
+      if (!this.ballServed && this.running && !this.paused) {
+        this.serveBall();
+      }
+    });
+
     this.reset();
+  }
+
+  getLevelSpeed() {
+    // Starts at a gentle 4.2 and ramps up smoothly with levels (max 7.2)
+    return Math.min(7.2, 4.2 + (this.level - 1) * 0.55);
+  }
+
+  prepareServe() {
+    this.ballServed = false;
+    this.serveTimer = 180; // auto-serve after 3s if untouched
+    this.balls = [{
+      x: this.paddle.x,
+      y: this.paddle.y - 12,
+      vx: 0,
+      vy: 0,
+      radius: 6,
+      trail: []
+    }];
+  }
+
+  serveBall() {
+    if (this.ballServed) return;
+    this.ballServed = true;
+    const speed = this.getLevelSpeed();
+    const vxDir = Math.random() > 0.5 ? 1 : -1;
+    const vx = vxDir * (speed * 0.52);
+    const vy = -Math.sqrt(Math.max(4, speed * speed - vx * vx));
+
+    if (this.balls.length > 0) {
+      this.balls[0].vx = vx;
+      this.balls[0].vy = vy;
+      this.balls[0].x = this.paddle.x;
+      this.balls[0].y = this.paddle.y - 12;
+    } else {
+      this.balls = [{
+        x: this.paddle.x,
+        y: this.paddle.y - 12,
+        vx: vx,
+        vy: vy,
+        radius: 6,
+        trail: []
+      }];
+    }
+    if (window.soundEngine) window.soundEngine.playBounce();
   }
 
   reset() {
     this.paddle.x = this.canvas.width / 2;
-    this.paddle.width = 100;
+    this.paddle.width = 120;
     this.paddle.lasers = 0;
-
-    this.balls = [{
-      x: this.canvas.width / 2,
-      y: 440,
-      vx: (Math.random() > 0.5 ? 4 : -4),
-      vy: -5,
-      radius: 6,
-      trail: []
-    }];
 
     this.score = 0;
     const hasShield = window.cyberShop ? window.cyberShop.hasPerk('perk_shield') : false;
@@ -71,6 +116,7 @@ class BreakoutGame {
     this.lasers = [];
     this.particles.reset();
     this.generateBricks();
+    this.prepareServe();
   }
 
   generateBricks() {
@@ -125,6 +171,10 @@ class BreakoutGame {
   handleKey(e) {
     if (e.type === 'keydown') {
       this.keys[e.key] = true;
+      if (!this.ballServed && (e.key === ' ' || e.key === 'Spacebar' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === 'Enter')) {
+        this.serveBall();
+        return;
+      }
       if ((e.key === ' ' || e.key === 'Spacebar') && this.paddle.lasers > 0) {
         this.firePaddleLaser();
       }
@@ -134,11 +184,20 @@ class BreakoutGame {
   }
 
   handleTouch(action) {
+    if (!this.ballServed) {
+      this.serveBall();
+    }
     if (action === 'left') this.paddle.x = Math.max(this.paddle.width / 2, this.paddle.x - 35);
     if (action === 'right') this.paddle.x = Math.min(this.canvas.width - this.paddle.width / 2, this.paddle.x + 35);
     if ((action === 'action' || action === 'up') && this.paddle.lasers > 0) {
       this.firePaddleLaser();
     }
+  }
+
+  handleDrag(x, y) {
+    if (!this.running || this.paused) return;
+    if (!this.ballServed) this.serveBall();
+    this.paddle.x = Math.max(this.paddle.width / 2, Math.min(this.canvas.width - this.paddle.width / 2, x));
   }
 
   firePaddleLaser() {
@@ -159,6 +218,21 @@ class BreakoutGame {
 
     // Keep paddle bounded
     this.paddle.x = Math.max(this.paddle.width / 2, Math.min(this.canvas.width - this.paddle.width / 2, this.paddle.x));
+
+    // Handle unserved ball (anchored to paddle with countdown)
+    if (!this.ballServed) {
+      if (this.balls.length > 0) {
+        this.balls[0].x = this.paddle.x;
+        this.balls[0].y = this.paddle.y - 12;
+        this.balls[0].vx = 0;
+        this.balls[0].vy = 0;
+      }
+      this.serveTimer--;
+      if (this.serveTimer <= 0) {
+        this.serveBall();
+      }
+      return;
+    }
 
     // Update paddle lasers
     for (let i = this.lasers.length - 1; i >= 0; i--) {
@@ -215,9 +289,12 @@ class BreakoutGame {
           ball.x >= pLeft && ball.x <= pRight && ball.vy > 0) {
         // Angle deflection based on hit position
         const hitOffset = (ball.x - this.paddle.x) / (this.paddle.width / 2);
-        const speed = Math.hypot(ball.vx, ball.vy);
-        ball.vx = hitOffset * 6.5;
-        ball.vy = -Math.sqrt(Math.max(16, speed * speed - ball.vx * ball.vx));
+        const currentSpeed = Math.hypot(ball.vx, ball.vy);
+        const targetSpeed = Math.min(7.2, Math.max(this.getLevelSpeed(), currentSpeed));
+        const clampedOffset = Math.max(-0.88, Math.min(0.88, hitOffset));
+
+        ball.vx = clampedOffset * (targetSpeed * 0.82);
+        ball.vy = -Math.sqrt(Math.max(4, targetSpeed * targetSpeed - ball.vx * ball.vx));
 
         this.particles.burst(ball.x, pTop, '#00f0ff', 12, 3);
         if (window.soundEngine) window.soundEngine.playBounce();
@@ -251,15 +328,7 @@ class BreakoutGame {
         this.gameOver();
         return;
       } else {
-        // Respawn single ball
-        this.balls.push({
-          x: this.paddle.x,
-          y: 440,
-          vx: (Math.random() > 0.5 ? 4 : -4),
-          vy: -5,
-          radius: 6,
-          trail: []
-        });
+        this.prepareServe();
       }
     }
 
@@ -272,6 +341,7 @@ class BreakoutGame {
       this.particles.addFloatingText(`MANCHE ${this.level} ! +300 PTS`, this.canvas.width / 2, 200, '#ffe600', 24);
       if (window.soundEngine) window.soundEngine.playPowerup();
       this.generateBricks();
+      this.prepareServe();
     }
 
     // Shop Perk: Magnet attraction for falling powerups
@@ -280,7 +350,7 @@ class BreakoutGame {
     // Update powerups
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
-      p.y += 2.5;
+      p.y += 1.8; // Gentle falling speed for easy catching
 
       if (hasMagnet && p.y > 140) {
         if (Math.abs(p.x - this.paddle.x) < 220) {
@@ -298,26 +368,27 @@ class BreakoutGame {
           p.x >= pLeft && p.x <= pRight) {
 
         if (p.type === 'multiball') {
-          // Add 2 balls
+          // Add 2 balls at current level speed
+          const curSpeed = this.getLevelSpeed();
           this.balls.push({
             x: this.paddle.x,
-            y: this.paddle.y - 10,
-            vx: -3.5,
-            vy: -5,
+            y: this.paddle.y - 12,
+            vx: -curSpeed * 0.6,
+            vy: -curSpeed * 0.8,
             radius: 6,
             trail: []
           });
           this.balls.push({
             x: this.paddle.x,
-            y: this.paddle.y - 10,
-            vx: 3.5,
-            vy: -5,
+            y: this.paddle.y - 12,
+            vx: curSpeed * 0.6,
+            vy: -curSpeed * 0.8,
             radius: 6,
             trail: []
           });
           this.particles.addFloatingText('MULTI-BILLES !', p.x, p.y, '#00f0ff');
         } else if (p.type === 'wide') {
-          this.paddle.width = Math.min(180, this.paddle.width + 40);
+          this.paddle.width = Math.min(200, this.paddle.width + 40);
           this.particles.addFloatingText('PADDLE LARGE !', p.x, p.y, '#00ff88');
         } else if (p.type === 'laser') {
           this.paddle.lasers += 16;
@@ -369,8 +440,9 @@ class BreakoutGame {
         }
       }
 
-      // Powerup drop chance (20%)
-      if (Math.random() < 0.22) {
+      // Powerup drop chance (generous 30% on level 1, 24% on level 2, 20% afterwards)
+      const dropChance = this.level === 1 ? 0.30 : (this.level === 2 ? 0.24 : 0.20);
+      if (Math.random() < dropChance) {
         const types = ['multiball', 'wide', 'laser'];
         this.powerups.push({
           x: b.x + b.width / 2,
@@ -502,6 +574,21 @@ class BreakoutGame {
     ctx.fillText(`VIES: ${'❤ '.repeat(this.lives)}`, 20, 30);
     ctx.fillText(`MANCHE: ${this.level}`, this.canvas.width - 120, 30);
     ctx.restore();
+
+    // Serve prompt overlay
+    if (!this.ballServed && this.balls.length > 0) {
+      ctx.save();
+      ctx.font = 'bold 14px Orbitron, sans-serif';
+      ctx.fillStyle = '#ffe600';
+      ctx.shadowColor = '#ffe600';
+      ctx.shadowBlur = 12;
+      ctx.textAlign = 'center';
+      const promptText = (window.ontouchstart !== undefined || 'ontouchstart' in window)
+        ? '⚡ TOUCHEZ L\'ÉCRAN POUR LANCER LA BILLE'
+        : '⚡ APPUYEZ SUR ESPACE OU ⬆ POUR LANCER';
+      ctx.fillText(promptText, this.canvas.width / 2, this.paddle.y - 32);
+      ctx.restore();
+    }
 
     // Particles and float text
     this.particles.draw(ctx);

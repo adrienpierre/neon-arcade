@@ -101,6 +101,11 @@ class VortexGame {
     if (action === 'right') this.shieldAngle += 0.35;
   }
 
+  handleDrag(x, y) {
+    if (!this.running || this.paused) return;
+    this.shieldAngle = Math.atan2(y - this.centerY, x - this.centerX);
+  }
+
   spawnOrb() {
     const angle = Math.random() * Math.PI * 2;
     const dist = 340;

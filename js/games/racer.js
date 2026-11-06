@@ -120,7 +120,7 @@ class RacerGame {
   reset() {
     this.position = 0;
     this.player.x = 0;
-    this.player.speed = 0;
+    this.player.speed = 40; // Rolling start, car auto-accelerates to cruising speed!
     this.player.boost = 0;
     this.player.invulnerable = 0;
     this.player.shield = window.cyberShop ? window.cyberShop.hasPerk('perk_shield') : false;
@@ -181,7 +181,13 @@ class RacerGame {
     if (action === 'right') this.player.x = Math.min(0.95, this.player.x + 0.16);
     if (action === 'up') this.player.speed = Math.min(this.player.maxSpeed, this.player.speed + 15);
     if (action === 'down') this.player.speed = Math.max(0, this.player.speed - 20);
-    if (action === 'action') this.triggerTurbo();
+    if (action === 'action' || action === 'turbo') this.triggerTurbo();
+  }
+
+  handleDrag(x, y) {
+    if (!this.running || this.paused) return;
+    const normX = ((x / this.canvas.width) - 0.5) * 2;
+    this.player.x = Math.max(-0.95, Math.min(0.95, normX * 1.3));
   }
 
   triggerTurbo() {
@@ -218,28 +224,32 @@ class RacerGame {
       this.player.invulnerable--;
     }
 
-    // Accelerate / Brake
+    // Auto-Acceleration: car automatically accelerates and cruises at max speed!
     const targetMax = this.player.boost > 0 ? 250 : this.player.maxSpeed;
-    if (this.keys['ArrowUp'] || this.keys['w'] || this.keys['W'] || this.keys['z'] || this.keys['Z']) {
-      this.player.speed = Math.min(targetMax, this.player.speed + this.player.accel);
-    } else if (this.keys['ArrowDown'] || this.keys['s'] || this.keys['S']) {
-      this.player.speed = Math.max(0, this.player.speed - 2.0);
+    if (this.keys['ArrowDown'] || this.keys['s'] || this.keys['S']) {
+      // Optional brake when manually held
+      this.player.speed = Math.max(35, this.player.speed - 2.5);
     } else {
-      this.player.speed = Math.max(0, this.player.speed - 0.5);
+      // Smooth automatic acceleration to targetMax (cruises automatically)
+      if (this.player.speed < targetMax) {
+        this.player.speed = Math.min(targetMax, this.player.speed + 1.25);
+      } else if (this.player.speed > targetMax) {
+        this.player.speed = Math.max(targetMax, this.player.speed - 0.8);
+      }
     }
 
     if (this.player.boost > 0) {
       this.player.boost--;
-      this.player.speed = Math.min(260, this.player.speed + 1.2);
+      this.player.speed = Math.min(260, this.player.speed + 1.6);
     }
 
-    // Steering
-    const speedRatio = this.player.speed / this.player.maxSpeed;
+    // Steering (always agile and responsive)
+    const speedRatio = Math.max(0.65, this.player.speed / this.player.maxSpeed);
     if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A'] || this.keys['q'] || this.keys['Q']) {
-      this.player.x -= 0.035 * speedRatio;
+      this.player.x -= 0.038 * speedRatio;
     }
     if (this.keys['ArrowRight'] || this.keys['d'] || this.keys['D']) {
-      this.player.x += 0.035 * speedRatio;
+      this.player.x += 0.038 * speedRatio;
     }
 
     // Off-road penalty

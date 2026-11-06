@@ -31,10 +31,12 @@ class SpaceGame {
     // Boss Battle State
     this.boss = null;
     this.bossAlert = 0;
-    this.nextBossScore = 1500;
+    this.nextBossScore = 1800;
 
     this.score = 0;
     this.wave = 1;
+    this.lastWave = 1;
+    this.gameTime = 0;
     this.lastShotTime = 0;
     this.fireRate = 180;
     this.running = false;
@@ -78,9 +80,11 @@ class SpaceGame {
     this.powerups = [];
     this.boss = null;
     this.bossAlert = 0;
-    this.nextBossScore = 1500;
+    this.nextBossScore = 1800;
     this.score = 0;
     this.wave = 1;
+    this.lastWave = 1;
+    this.gameTime = 0;
     this.particles.reset();
   }
 
@@ -125,17 +129,21 @@ class SpaceGame {
   handleTouch(action) {
     if (action === 'left') this.player.x = Math.max(20, this.player.x - 30);
     if (action === 'right') this.player.x = Math.min(this.canvas.width - 20, this.player.x + 30);
-    if (action === 'up') this.shoot();
-    if (action === 'action') {
+    if (action === 'up' || action === 'action') this.shoot();
+    if (action === 'hold' || action === 'bullet') {
       if (window.cyberShop && window.cyberShop.hasPerk('perk_bullet_time') && this.bulletTime <= 0) {
         this.bulletTime = 180;
         this.particles.shake(10, 4);
         this.particles.addFloatingText('⏱ MATRIX BULLET TIME !', this.player.x, this.player.y - 40, '#00ff88', 24);
         if (window.soundEngine) window.soundEngine.playPowerup();
-      } else {
-        this.shoot();
       }
     }
+  }
+
+  handleDrag(x, y) {
+    if (!this.running || this.paused) return;
+    this.player.x = Math.max(20, Math.min(this.canvas.width - 20, x));
+    this.shoot();
   }
 
   shoot() {
@@ -162,9 +170,9 @@ class SpaceGame {
       targetY: 90,
       width: 180,
       height: 80,
-      hp: 60,
-      maxHp: 60,
-      vx: 2.5,
+      hp: 45,
+      maxHp: 45,
+      vx: 2.2,
       attackTimer: 0,
       phase: 1
     };
@@ -178,42 +186,76 @@ class SpaceGame {
 
   spawnEnemy() {
     if (this.boss) return; // Don't spawn normal hordes during boss
-    const types = ['drone', 'drone', 'cruiser', 'meteor'];
+
+    // Progressive enemy types according to current wave
+    let types = ['drone'];
+    if (this.wave === 2) {
+      types = ['drone', 'drone', 'drone', 'cruiser'];
+    } else if (this.wave === 3) {
+      types = ['drone', 'drone', 'cruiser', 'meteor'];
+    } else if (this.wave >= 4) {
+      types = ['drone', 'cruiser', 'cruiser', 'meteor'];
+    }
+
     const chosenType = types[Math.floor(Math.random() * types.length)];
     const x = Math.random() * (this.canvas.width - 60) + 30;
 
     let hp = 1;
-    let speed = 2 + Math.random() * 1.5;
+    // Base speed scales smoothly with wave
+    const baseSpeed = 1.3 + Math.min(2.0, (this.wave - 1) * 0.25);
+    let speed = baseSpeed + Math.random() * 0.7;
     let size = 24;
 
     if (chosenType === 'cruiser') {
       hp = 3;
-      speed = 1.2;
+      speed = Math.max(1.0, baseSpeed * 0.75);
       size = 32;
     } else if (chosenType === 'meteor') {
       hp = 2;
-      speed = 4;
+      speed = Math.min(4.2, baseSpeed * 1.5);
       size = 28;
     }
 
     this.enemies.push({
       x: x,
       y: -30,
-      vx: (Math.random() - 0.5) * 1.5,
+      vx: (Math.random() - 0.5) * (1.0 + this.wave * 0.15),
       speed: speed,
       type: chosenType,
       hp: hp,
       size: size,
-      shootTimer: Math.random() * 60 + 60
+      shootTimer: Math.random() * 60 + (this.wave === 2 ? 140 : 100)
     });
   }
 
   update() {
     const timeScale = (this.bulletTime > 0) ? 0.35 : 1.0;
     if (this.bulletTime > 0) this.bulletTime--;
+    this.gameTime++;
 
     if (window.challengeEngine && window.challengeEngine.isGameChallenge('space')) {
       window.challengeEngine.checkProgress(this.score, this.particles, this.canvas.width, this.canvas.height);
+    }
+
+    // Dynamic wave progression over time and score
+    if (!this.boss) {
+      const timeWave = Math.floor(this.gameTime / 950);
+      const scoreWave = Math.floor(this.score / 500);
+      this.wave = Math.max(1, 1 + Math.max(timeWave, scoreWave));
+
+      if (this.wave > this.lastWave) {
+        this.lastWave = this.wave;
+        const waveTitles = {
+          2: 'ESCADRILLE EN APPROCHE',
+          3: 'CHAMP DE MÉTÉORES & CROISEURS',
+          4: 'ZONE DE COMBAT INTENSE',
+          5: 'SURCHARGE COSMIQUE'
+        };
+        const title = waveTitles[this.wave] || `SECTEUR ${this.wave}`;
+        this.particles.shake(12, 5);
+        this.particles.addFloatingText(`⚡ VAGUE ${this.wave} : ${title}`, this.canvas.width / 2, 220, '#00f0ff', 24);
+        if (window.soundEngine) window.soundEngine.playPowerup();
+      }
     }
 
     // Controls
@@ -258,6 +300,17 @@ class SpaceGame {
 
     // Check Boss Spawn trigger
     if (!this.boss && this.score >= this.nextBossScore) {
+      // Clear small enemies with a flash so battle is 1-on-1
+      this.enemies.forEach(e => {
+        this.particles.burst(e.x, e.y, '#00f0ff', 12, 3);
+      });
+      this.enemies = [];
+      this.enemyLasers = [];
+
+      // Pre-boss supply drops
+      this.powerups.push({ x: this.canvas.width / 2 - 40, y: 140, type: 'shield', vy: 1.5 });
+      this.powerups.push({ x: this.canvas.width / 2 + 40, y: 140, type: 'triple', vy: 1.5 });
+
       this.spawnBoss();
       this.nextBossScore += 2500;
     }
@@ -275,18 +328,18 @@ class SpaceGame {
         }
 
         // Check Phase Transitions
-        if (this.boss.hp <= 35 && this.boss.phase === 1) {
+        if (this.boss.hp <= 25 && this.boss.phase === 1) {
           this.boss.phase = 2;
-          this.boss.vx = 3.6;
+          this.boss.vx = 3.2;
           this.particles.shake(25, 12);
           this.particles.addFloatingText('⚠ TITAN PHASE 2 : FUREUR QUANTIQUE !', this.boss.x, this.boss.y - 30, '#ff007f', 24);
           if (window.soundEngine) {
             window.soundEngine.playKlaxon();
             window.soundEngine.announce('ALERTE ! TITAN PHASE DEUX !');
           }
-        } else if (this.boss.hp <= 15 && this.boss.phase === 2) {
+        } else if (this.boss.hp <= 10 && this.boss.phase === 2) {
           this.boss.phase = 3;
-          this.boss.vx = 4.8;
+          this.boss.vx = 4.2;
           this.particles.shake(35, 16);
           this.particles.addFloatingText('🔥 SURCHARGE CRITIQUE DU NOYAU !', this.boss.x, this.boss.y - 30, '#ffe600', 26);
           if (window.soundEngine) {
@@ -297,26 +350,26 @@ class SpaceGame {
 
         // Boss attacks based on Phase
         this.boss.attackTimer += timeScale;
-        const attackInterval = this.boss.phase === 3 ? 18 : (this.boss.phase === 2 ? 26 : 38);
+        const attackInterval = this.boss.phase === 3 ? 20 : (this.boss.phase === 2 ? 30 : 42);
         if (Math.floor(this.boss.attackTimer) % attackInterval === 0 && Math.random() < 0.35) {
           if (this.boss.phase === 1) {
-            // 3-way spread
-            [-3, 0, 3].forEach(angleVx => {
+            // 3-way spread at readable speed
+            [-2.8, 0, 2.8].forEach(angleVx => {
               this.enemyLasers.push({
                 x: this.boss.x + angleVx * 10,
                 y: this.boss.y + 35,
                 vx: angleVx * timeScale,
-                vy: 4.5 * timeScale
+                vy: 3.8 * timeScale
               });
             });
           } else if (this.boss.phase === 2) {
-            // 5-way spread
-            [-4.5, -2, 0, 2, 4.5].forEach(angleVx => {
+            // 4-way spread leaving center gap for dodging!
+            [-3.8, -1.4, 1.4, 3.8].forEach(angleVx => {
               this.enemyLasers.push({
                 x: this.boss.x + angleVx * 12,
                 y: this.boss.y + 35,
                 vx: angleVx * timeScale,
-                vy: 5.2 * timeScale
+                vy: 4.4 * timeScale
               });
             });
           } else if (this.boss.phase === 3) {
@@ -326,7 +379,7 @@ class SpaceGame {
                 x: this.boss.x + (Math.random() - 0.5) * 40,
                 y: this.boss.y + 35,
                 vx: angleVx * timeScale,
-                vy: (4.5 + Math.random() * 2) * timeScale
+                vy: (4.4 + Math.random() * 1.5) * timeScale
               });
             });
           }
@@ -365,8 +418,10 @@ class SpaceGame {
       }
     }
 
-    // Spawn normal enemies
-    if (!this.boss && Math.random() < (0.035 + (this.wave * 0.005)) * timeScale && this.enemies.length < 12) {
+    // Spawn normal enemies with progressive count and spawn rate
+    const maxEnemies = Math.min(10, 3 + Math.floor(this.wave * 1.4));
+    const spawnRate = Math.min(0.042, 0.015 + this.wave * 0.005) * timeScale;
+    if (!this.boss && Math.random() < spawnRate && this.enemies.length < maxEnemies) {
       this.spawnEnemy();
     }
 
@@ -386,7 +441,8 @@ class SpaceGame {
       el.x += (el.vx || 0) * timeScale;
       el.y += el.vy * timeScale;
 
-      if (Math.hypot(el.x - this.player.x, el.y - this.player.y) < 18) {
+      // Fair hurtbox (12px core radius)
+      if (Math.hypot(el.x - this.player.x, el.y - this.player.y) < 12) {
         this.enemyLasers.splice(i, 1);
         if (this.player.shield) {
           this.player.shield = false;
@@ -415,8 +471,9 @@ class SpaceGame {
       if (e.type === 'cruiser') {
         e.shootTimer -= timeScale;
         if (e.shootTimer <= 0) {
-          e.shootTimer = 110;
-          this.enemyLasers.push({ x: e.x, y: e.y + e.size / 2, vy: 5 });
+          e.shootTimer = Math.max(90, 150 - this.wave * 10);
+          const laserVy = Math.min(5.0, 3.4 + this.wave * 0.3);
+          this.enemyLasers.push({ x: e.x, y: e.y + e.size / 2, vy: laserVy });
         }
       }
 
@@ -438,7 +495,9 @@ class SpaceGame {
             this.particles.addFloatingText(`+${pts}`, e.x, e.y, hitColor);
             if (window.soundEngine) window.soundEngine.playExplosion(e.type === 'cruiser');
 
-            if (Math.random() < 0.22) {
+            // Generous drop rate in early waves
+            const pDropRate = this.wave === 1 ? 0.32 : (this.wave === 2 ? 0.26 : 0.20);
+            if (Math.random() < pDropRate) {
               const pTypes = ['triple', 'shield', 'bomb'];
               this.powerups.push({
                 x: e.x,
@@ -454,7 +513,8 @@ class SpaceGame {
         }
       }
 
-      if (Math.hypot(e.x - this.player.x, e.y - this.player.y) < e.size / 2 + 14) {
+      // Fair ship collision (core body radius)
+      if (Math.hypot(e.x - this.player.x, e.y - this.player.y) < e.size / 2 + 8) {
         if (this.player.shield) {
           this.player.shield = false;
           this.enemies.splice(i, 1);
@@ -747,6 +807,26 @@ class SpaceGame {
       ctx.fillText(`⏱ MATRIX SLOW-MO: ${Math.ceil(this.bulletTime / 60)}s`, this.canvas.width - 240, 30);
       ctx.restore();
     }
+
+    // Retro Space HUD
+    ctx.save();
+    ctx.font = 'bold 13px Orbitron, sans-serif';
+    ctx.fillStyle = '#00f0ff';
+    ctx.shadowColor = '#00f0ff';
+    ctx.shadowBlur = 8;
+    ctx.fillText(`VAGUE: ${this.wave}`, 20, 30);
+    ctx.fillText(`SCORE: ${this.score}`, 125, 30);
+    if (this.player.shield) {
+      ctx.fillStyle = '#00ff88';
+      ctx.shadowColor = '#00ff88';
+      ctx.fillText('🛡 BOUCLIER', 260, 30);
+    }
+    if (this.player.tripleShot > 0) {
+      ctx.fillStyle = '#ffe600';
+      ctx.shadowColor = '#ffe600';
+      ctx.fillText(`⚡ 3X: ${this.player.tripleShot}`, 390, 30);
+    }
+    ctx.restore();
 
     this.particles.draw(ctx);
     ctx.restore();
