@@ -1159,11 +1159,26 @@ body.crt-active .crt-overlay {
   display: none !important;
 }
 
-/* Cyberdrift (Racer): Auto-drive, only Left/Right on left thumb + Turbo on right thumb */
+.btn-gas {
+  display: none !important;
+}
+
+/* Cyberdrift (Racer): Left/Right on left thumb + Gas (▲) & Turbo (⚡) on right thumb */
 .touch-gamepad[data-game="racer"] .touch-v-group,
 .touch-gamepad[data-game="racer"] .btn-hold,
 .touch-gamepad[data-game="racer"] .btn-rotate {
   display: none !important;
+}
+.touch-gamepad[data-game="racer"] .btn-gas {
+  display: flex !important;
+  border-color: #00ff88;
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.15);
+}
+.touch-gamepad[data-game="racer"] .btn-gas:active {
+  background: #00ff88;
+  color: #000;
+  box-shadow: 0 0 16px #00ff88;
 }
 
 /* Orbital Vortex: Left / Right rotation buttons */
