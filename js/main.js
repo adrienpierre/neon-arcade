@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'retro',
       tag: 'Classique Cyber',
       description: 'Pilotez un serpent de néon survolté ! Téléportez-vous dans les vortex quantiques et activez le turbo dash 2X !',
-      controls: 'Flèches / ZQSD pour tourner • Espace pour Turbo',
+      controls: 'PC: Flèches / ZQSD • Espace Turbo | Mobile: Glisser / D-Pad • ⚡ Turbo',
       instance: new SnakeGame()
     },
     space: {
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'action',
       tag: 'Shooter Titan Boss',
       description: 'Annihilez les hordes cybernétiques et survivez au redoutable Titan Mothership à tirs radiaux !',
-      controls: 'Gauche / Droite pour bouger • Espace pour tirer',
+      controls: 'PC: Souris / Flèches / ZQSD • Espace Tir | Mobile: Glisser / Boutons • ⚡ Auto-Tir',
       instance: new SpaceGame()
     },
     racer: {
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'action',
       tag: 'OutRun Pseudo-3D',
       description: 'Course rétro-synthwave à pleine vitesse ! Slalomez entre les véhicules, déclenchez la nitro et passez les checkpoints !',
-      controls: 'Auto-accélération • Gauche / Droite pour slalomer • Espace pour Nitro',
+      controls: 'PC: Flèches / ZQSD (▲ Accélère) • Espace Nitro | Mobile: Glisser / ◀ ▶ ▲ ⚡',
       instance: new RacerGame()
     },
     slicer: {
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'action',
       tag: 'Cyber Slicer',
       description: 'Tranchez les cristaux de données en plein vol d\'un coup de katana plasma ! Évitez les bombes EMP instables.',
-      controls: 'Glisser la souris / balayage tactile pour trancher',
+      controls: 'PC: Clic & Glisser la souris | Mobile: Balayage tactile du sabre',
       instance: new SlicerGame()
     },
     vortex: {
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'reflexe',
       tag: 'Survie 360°',
       description: 'Défendez le noyau gravitationnel à 360° en faisant pivoter votre bouclier contre les ondes polygonales entrantes !',
-      controls: 'Souris / Tactile pour pivoter à 360° ou Flèches',
+      controls: 'PC: Suivi Souris 360° / Flèches | Mobile: Tactile 360° / Boutons ◀ ▶',
       instance: new VortexGame()
     },
     stacker: {
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'retro',
       tag: 'Tetris Néon',
       description: 'Empilez les tétrominos holographiques, projetez la pièce fantôme et déclenchez des Quantum Tetris à 4 lignes !',
-      controls: 'Flèches pour bouger/tourner • Espace Hard Drop • C Hold',
+      controls: 'PC: Flèches / ZQSD • Espace Drop • C/Shift Réserve | Mobile: Balayer ou D-Pad • 🔄 ⚡ 📦',
       instance: new StackerGame()
     },
     breakout: {
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'retro',
       tag: 'Arkanoid Néon',
       description: 'Détruisez les briques holographiques, débloquez le paddle laser et déclenchez des chaînes de multi-billes !',
-      controls: 'Gauche / Droite pour viser • Espace pour laser',
+      controls: 'PC: Souris / Flèches • Espace Lancer/Laser | Mobile: Glisser Paddle / Boutons • ⚡',
       instance: new BreakoutGame()
     },
     flap: {
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'reflexe',
       tag: 'Runner Anti-Gravité',
       description: 'Guidez votre drone quantum entre les barrières laser mortelles en frôlant les parois pour des combos risqués.',
-      controls: 'Espace / Clic / Flèche Haut pour propulser',
+      controls: 'PC: Espace / Clic / Flèche Haut | Mobile: Toucher écran ou bouton géant 🚀',
       instance: new FlapGame()
     },
     memory: {
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'reflexe',
       tag: 'Mémoire Synthwave',
       description: 'Mémorisez et reproduisez la partition lumineuse et harmonique. Escalade de tempo et sons analogiques 80s.',
-      controls: 'Clic sur les pads ou touches 1, 2, 3, 4',
+      controls: 'PC: Touches 1,2,3,4 ou ZQSD / Flèches | Mobile: Taper directement sur les pads',
       instance: new MemoryGame()
     },
     aim: {
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: 'action',
       tag: 'Test Réflexe',
       description: 'Visez et détruisez les cibles cybernétiques avant qu\'elles ne disparaissent. Évitez absolument les pièges crânes !',
-      controls: 'Souris / Clic rapide sur les cibles',
+      controls: 'PC: Souris / Viseur + Clic ou Espace | Mobile: Toucher directement les cibles',
       instance: new AimGame()
     }
   };
@@ -460,6 +460,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentGame) {
       currentGame.stop();
     }
+    // Clean up pointer listeners on canvas to guarantee clean state
+    gameCanvas.onpointermove = null;
+    gameCanvas.onpointerdown = null;
+    gameCanvas.onpointerup = null;
+
     window.activeGameInstance = null;
     isGameRunning = false;
     isGamePaused = false;
@@ -496,7 +501,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   overlayBtnExit.addEventListener('click', exitGame);
 
-  // Global Keybindings
+  // Global Keybindings & Window Blur Protection
+  window.addEventListener('blur', () => {
+    if (currentGame && currentGame.keys) {
+      currentGame.keys = {};
+    }
+    if (currentGameKey === 'snake' && currentGame) {
+      currentGame.isTurbo = false;
+    }
+  });
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && profileModal && profileModal.classList.contains('mandatory-profile')) {
       e.preventDefault();
@@ -543,8 +557,15 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       triggerTouch(action);
 
-      // Only repeat directional movements while held
-      if (action === 'left' || action === 'right' || action === 'up' || action === 'down') {
+      // Turbo hold for Snake
+      if (action === 'action' && currentGameKey === 'snake' && currentGame) {
+        currentGame.handleTouch('turbo_start');
+      }
+
+      // Repeat directional movements AND auto-fire while held
+      const shouldRepeat = action === 'left' || action === 'right' || action === 'up' || action === 'down' ||
+                           (action === 'action' && (currentGameKey === 'space' || currentGameKey === 'breakout'));
+      if (shouldRepeat) {
         if (touchHoldInterval) clearInterval(touchHoldInterval);
         touchHoldInterval = setInterval(() => {
           triggerTouch(action);
@@ -556,6 +577,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (touchHoldInterval) {
         clearInterval(touchHoldInterval);
         touchHoldInterval = null;
+      }
+      if (action === 'action' && currentGameKey === 'snake' && currentGame) {
+        currentGame.handleTouch('turbo_end');
       }
     };
 
@@ -605,6 +629,27 @@ document.addEventListener('DOMContentLoaded', () => {
       if (currentGame.handleDrag) {
         currentGame.handleDrag(coords.x, coords.y);
       }
+
+      // Real-time instantaneous swipe detection for Snake & Tetris
+      if (currentGameKey === 'snake' || currentGameKey === 'stacker') {
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
+        const swipeThreshold = 20;
+
+        if (absX > swipeThreshold || absY > swipeThreshold) {
+          if (absX > absY) {
+            currentGame.handleTouch(dx > 0 ? 'right' : 'left');
+          } else {
+            currentGame.handleTouch(dy > 0 ? 'down' : 'up');
+          }
+          // Reset anchor to allow chained continuous swiping
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }
+      }
+
       // Prevent pull-to-refresh & screen scrolling during gameplay
       if (e.cancelable) e.preventDefault();
     }
@@ -621,14 +666,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const absY = Math.abs(dy);
 
       if (absX > 25 || absY > 25) {
-        // Swipe detected
+        // Fallback swipe on release
         if (absX > absY) {
           currentGame.handleTouch(dx > 0 ? 'right' : 'left');
         } else {
           currentGame.handleTouch(dy > 0 ? 'down' : 'up');
         }
       } else if (dt < 300) {
-        // Quick tap: only fire action for games without their own direct pointerdown listeners
+        // Quick tap
         if (currentGameKey !== 'slicer' && currentGameKey !== 'aim' && currentGameKey !== 'memory') {
           currentGame.handleTouch('action');
         }
